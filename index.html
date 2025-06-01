@@ -1,40 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Transmisión en vivo AWS IVS</title>
-  <link href="https://vjs.zencdn.net/7.14.3/video-js.css" rel="stylesheet" />
-</head>
-<body style="text-align:center; background:#111; color:white;">
-
-  <h2>🎥 Transmisión en Vivo - AWS IVS</h2>
-
-  <video
-    id="aws-ivs-video"
-    class="video-js vjs-default-skin"
-    controls
-    autoplay
-    width="720"
-    height="420"
-    muted
-  ></video>
-
-  <script src="https://vjs.zencdn.net/7.14.3/video.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script>
-    const video = document.getElementById('aws-ivs-video');
-    const videoSrc = "https://af65d6f42f2e.us-east-1.playback.live-video.net/api/video/v1/us-east-1.824821655063.channel.BPR9gYq5kAfa.m3u8";
-
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(videoSrc);
-      hls.attachMedia(video);
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = videoSrc;
-    } else {
-      alert("Tu navegador no soporta HLS");
+  <title>Monitor de Transmisiones IVS</title>
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
     }
-  </script>
+    input, button {
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 6px;
+      margin: 10px;
+    }
+    input {
+      width: 60%;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    video {
+      width: 400px;
+      height: 225px;
+      background: black;
+      border-radius: 8px;
+      border: 2px solid #555;
+    }
+  </style>
+</head>
+<body>
 
+  <h1>🔴 Monitor de transmisiones IVS</h1>
+  <p>Pega tu URL `.m3u8` de AWS IVS para añadir tu transmisión</p>
+
+  <input type="text" id="urlInput" placeholder="https://...m3u8">
+  <button onclick="agregarTransmision()">Agregar transmisión</button>
+
+  <div class="grid" id="videoGrid"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- HLS -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <script>
+    // Configuración de tu proyecto Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOIL9qYGGE15Tz-YLkOcIMWzafqvpjhPM",
+      authDomain: "transmision-ivs.firebaseapp.com",
+      databaseURL: "https://transmision-ivs-default-rtdb.firebaseio.com",
+      projectId: "transmision-ivs",
+      storageBucket: "transmision-ivs.appspot.com",
+      messagingSenderId: "802932852717",
+      appId: "1:802932852717:web:e1d29223fdf5d741b8c9e4"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Agrega una transmisión a Firebase
+    function agregarTransmision() {
+      const url = document.getElementById("urlInput").value.trim();
+      if (!url || !url.startsWith("https://")) {
+        alert("Ingresa una URL válida que empiece con https://");
+        return;
+      }
+      const nuevaRef = db.ref("transmisiones").push();
+      nuevaRef.set({ url });
+      document.getElementById("urlInput").value = "";
+    }
+
+    // Cargar transmisiones en tiempo real
+    db.ref("transmisiones").on("value", (snapshot) => {
+      const grid = document.getElementById("videoGrid");
+      grid.innerHTML = ""; // limpiar
+      const data = snapshot.val();
+      if (data) {
+        Object.values(data).forEach(({ url }, index) => {
+          const video = document.createElement("video");
+          video.setAttribute("controls", true);
+          video.setAttribute("autoplay", true);
+          video.setAttribute("muted", true);
+          video.setAttribute("playsinline", true);
+          video.id = "video" + index;
+
+          if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+          } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = url;
+          }
+
+          grid.appendChild(video);
+        });
+      }
+    });
+  </script>
 </body>
 </html>
