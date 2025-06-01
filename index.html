@@ -18,7 +18,7 @@
       margin: 10px;
     }
     input {
-      width: 60%;
+      width: 50%;
     }
     button {
       background-color: #4CAF50;
@@ -33,21 +33,35 @@
       justify-content: center;
       margin-top: 30px;
     }
+    .stream-box {
+      background-color: #222;
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px solid #555;
+      width: 420px;
+    }
+    .stream-box h3 {
+      margin: 0;
+      font-size: 1em;
+      color: #6cf;
+    }
     video {
-      width: 400px;
+      width: 100%;
       height: 225px;
       background: black;
       border-radius: 8px;
-      border: 2px solid #555;
     }
   </style>
 </head>
 <body>
 
   <h1>🔴 Monitor de transmisiones IVS</h1>
-  <p>Pega tu URL `.m3u8` de AWS IVS para añadir tu transmisión</p>
+  <p>Pega tu URL `.m3u8` de AWS IVS y tu nombre</p>
 
+  <input type="text" id="nombreInput" placeholder="Tu nombre o alias">
+  <br>
   <input type="text" id="urlInput" placeholder="https://...m3u8">
+  <br>
   <button onclick="agregarTransmision()">Agregar transmisión</button>
 
   <div class="grid" id="videoGrid"></div>
@@ -59,7 +73,6 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
   <script>
-    // Configuración de tu proyecto Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAOIL9qYGGE15Tz-YLkOcIMWzafqvpjhPM",
       authDomain: "transmision-ivs.firebaseapp.com",
@@ -70,35 +83,42 @@
       appId: "1:802932852717:web:e1d29223fdf5d741b8c9e4"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Agrega una transmisión a Firebase
     function agregarTransmision() {
       const url = document.getElementById("urlInput").value.trim();
-      if (!url || !url.startsWith("https://")) {
-        alert("Ingresa una URL válida que empiece con https://");
+      const nombre = document.getElementById("nombreInput").value.trim();
+
+      if (!url || !url.startsWith("https://") || !nombre) {
+        alert("Ingresa un nombre y una URL válida que empiece con https://");
         return;
       }
+
       const nuevaRef = db.ref("transmisiones").push();
-      nuevaRef.set({ url });
+      nuevaRef.set({ url, nombre });
+
       document.getElementById("urlInput").value = "";
+      document.getElementById("nombreInput").value = "";
     }
 
-    // Cargar transmisiones en tiempo real
     db.ref("transmisiones").on("value", (snapshot) => {
       const grid = document.getElementById("videoGrid");
-      grid.innerHTML = ""; // limpiar
+      grid.innerHTML = "";
       const data = snapshot.val();
       if (data) {
-        Object.values(data).forEach(({ url }, index) => {
+        Object.values(data).forEach(({ url, nombre }, index) => {
+          const box = document.createElement("div");
+          box.className = "stream-box";
+
+          const title = document.createElement("h3");
+          title.textContent = nombre || "Sin nombre";
+
           const video = document.createElement("video");
           video.setAttribute("controls", true);
           video.setAttribute("autoplay", true);
           video.setAttribute("muted", true);
           video.setAttribute("playsinline", true);
-          video.id = "video" + index;
 
           if (Hls.isSupported()) {
             const hls = new Hls();
@@ -108,7 +128,9 @@
             video.src = url;
           }
 
-          grid.appendChild(video);
+          box.appendChild(title);
+          box.appendChild(video);
+          grid.appendChild(box);
         });
       }
     });
