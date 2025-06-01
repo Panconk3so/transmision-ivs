@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Transmisión en vivo AWS IVS</title>
+  <link href="https://vjs.zencdn.net/7.14.3/video-js.css" rel="stylesheet" />
+</head>
+<body style="text-align:center; background:#111; color:white;">
+
+  <h2>🎥 Transmisión en Vivo - AWS IVS</h2>
+
+  <video
+    id="aws-ivs-video"
+    class="video-js vjs-default-skin"
+    controls
+    autoplay
+    width="720"
+    height="420"
+    muted
+  ></video>
+
+  <script src="https://vjs.zencdn.net/7.14.3/video.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const video = document.getElementById('aws-ivs-video');
+    const videoSrc = "https://af65d6f42f2e.us-east-1.playback.live-video.net/api/video/v1/us-east-1.824821655063.channel.BPR9gYq5kAfa.m3u8";
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(videoSrc);
+      hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = videoSrc;
+    } else {
+      alert("Tu navegador no soporta HLS");
+    }
+  </script>
+
+</body>
+</html>
